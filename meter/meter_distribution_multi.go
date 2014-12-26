@@ -9,18 +9,30 @@ import (
 	"unsafe"
 )
 
+// MultiDistribution associates Distribution objects to keys which can be
+// selected when recording. Is completely go-routine safe.
 type MultiDistribution struct {
-	Size         int
+
+	// Size is used to initialize the Size member of the underlying Distribution
+	// objects.
+	Size int
+
+	// SamplingSeed is used to initialize the SamplingSeed member of underlying
+	// Distribution objects.
 	SamplingSeed int64
 
 	dists unsafe.Pointer
 	mutex sync.Mutex
 }
 
+// Record adds the given value to the distribution associated with the given
+// key. New keys are lazily created as required.
 func (multi *MultiDistribution) Record(key string, value float64) {
 	multi.get(key).Record(value)
 }
 
+// ReadMeter calls ReadMeter on all the underlying distributions where all the
+// keys are prefixed by the key name used in the calls to Record.
 func (multi *MultiDistribution) ReadMeter(delta time.Duration) map[string]float64 {
 	result := make(map[string]float64)
 

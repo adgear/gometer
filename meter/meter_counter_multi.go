@@ -9,19 +9,27 @@ import (
 	"unsafe"
 )
 
+// MultiCounter associates Counter objects to keys which can be selected when
+// recording. Is completely go-routine safe.
 type MultiCounter struct {
 	counters unsafe.Pointer
 	mutex    sync.Mutex
 }
 
+// RecordHit calls RecordHit on the level associated with the given key. New
+// Keys are lazily created as required.
 func (multi *MultiCounter) RecordHit(key string) {
 	multi.get(key).RecordHit()
 }
 
+// RecordCount calls RecordCount on the level associated with the given key. New
+// Keys are lazily created as required.
 func (multi *MultiCounter) RecordCount(key string, count uint64) {
 	multi.get(key).RecordCount(count)
 }
 
+// ReadMeter calls ReadMeter on all underlying counters where all the keys are
+// prefixed by the key name used in the calls to Record.
 func (multi *MultiCounter) ReadMeter(delta time.Duration) map[string]float64 {
 	result := make(map[string]float64)
 

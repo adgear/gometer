@@ -13,16 +13,21 @@ import (
 )
 
 var (
-	CarbonDialTimeout  = 1 * time.Second
+	// CarbonDialTimeout is the timeout value when dialing the remote carbon
+	// host.
+	CarbonDialTimeout = 1 * time.Second
+
+	// CarbonMaxConnDelay is the maximum value of the exponential backoff scheme
+	// when reconecting to a carbon host.
 	CarbonMaxConnDelay = 1 * time.Minute
 )
 
-type msgConn struct {
-	URL  string
-	Conn net.Conn
-}
-
+// CarbonHandler forwards a set of recorded meter values to multiple carbon
+// hosts. Any values received while the connection to the carbon host is
+// unavailable are dropped.
 type CarbonHandler struct {
+
+	// URLs contains the list of carbon hosts to connect to.
 	URLs []string
 
 	initialize sync.Once
@@ -32,13 +37,22 @@ type CarbonHandler struct {
 	valuesC chan map[string]float64
 }
 
+// Init can be optionally used to initialize the object. Note that the handler
+// will lazily initialize itself as needed.
 func (carbon *CarbonHandler) Init() {
 	carbon.initialize.Do(carbon.init)
 }
 
+// HandleMeters forwards the given values to all the carbon host with a valid
+// connection.
 func (carbon *CarbonHandler) HandleMeters(values map[string]float64) {
 	carbon.Init()
 	carbon.valuesC <- values
+}
+
+type msgConn struct {
+	URL  string
+	Conn net.Conn
 }
 
 func (carbon *CarbonHandler) init() {

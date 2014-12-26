@@ -6,20 +6,27 @@ import (
 	"time"
 )
 
+// Meter represents a meter used to record various metrics which will be read
+// periodically. The time.Duration parameter is used to normalize the values
+// read by the meter so that they represent a per second values.
 type Meter interface {
 	ReadMeter(time.Duration) map[string]float64
 }
 
-var DefaultPoller Poller
+// Join concatenates the given items with a '.' character where necessary.
+func Join(items ...string) string {
+	result := ""
 
-func Add(key string, meter Meter) {
-	DefaultPoller.Add(key, meter)
-}
+	for _, item := range items {
 
-func Remove(key string) {
-	DefaultPoller.Remove(key)
-}
+		if result == "" {
+			result = item
 
-func Handle(handler Handler) {
-	DefaultPoller.Handle(handler)
+		} else if item != "" {
+			result = result + "." + item
+		}
+
+	}
+
+	return result
 }

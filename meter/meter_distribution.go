@@ -12,14 +12,34 @@ import (
 	"unsafe"
 )
 
+// DefaultDistributionSize is used if Size is not set in Distribution.
 const DefaultDistributionSize = 1000
 
+// Distribution aggregates metrics over a distribution of values.
+//
+// Record will add up to a maximum of Size elements after which new elements
+// will be randomly sampled with a probability that depends on the number of
+// elements recorded. This schemes ensures that a distribution has a constant
+// memory footprint and doesn't need to allocate for calls to Record.
+//
+// ReadMeter will compute percentiles over the sampled distribution and the min
+// and max value seen over the entire distribution.
+//
+// Distribution is completely go-routine safe.
 type Distribution struct {
-	Size         int
+
+	// Size is maximum number of elements that the distribution can hold. Above
+	// this amount, new values are sampled.
+	Size int
+
+	// SamplingSeed is the initial seed for the RNG used during sampling.
 	SamplingSeed int64
-	state        unsafe.Pointer
+
+	state unsafe.Pointer
 }
 
+// Record adds the given value to the distribution with a probability based on
+// the number of elements recorded since the last call to ReadMeter.
 func (dist *Distribution) Record(value float64) {
 	state := atomic.LoadPointer(&dist.state)
 
@@ -34,10 +54,15 @@ func (dist *Distribution) Record(value float64) {
 	(*distribution)(state).Record(value)
 }
 
+// RecordDuration is a convenience wrapper around Record for time.Duration
+// values.
 func (dist *Distribution) RecordDuration(duration time.Duration) {
 	dist.Record(float64(duration))
 }
 
+// ReadMeter computes various statistic over the sampled distribution (50th,
+// 90th and 99th percentile) and the count, min and max over the entire
+// distribution. All recorded elements are then discarded from the distribution.
 func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
 	newState := newDistribution(dist.getSize(), dist.getSeed())
 	oldState := atomic.SwapPointer(&dist.state, unsafe.Pointer(newState))

@@ -9,8 +9,10 @@ import (
 	"log"
 )
 
+// KlogHandler is used to print the received meter values to klog.
 type KlogHandler struct{}
 
+// HandleMeters sends the given values to klog.
 func (KlogHandler) HandleMeters(values map[string]float64) {
 	body, err := json.Marshal(values)
 	if err != nil {

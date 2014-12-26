@@ -9,15 +9,21 @@ import (
 	"unsafe"
 )
 
+// MultiLevel associates Level objects to keys which can be selected when
+// recording. Is completely go-routine safe.
 type MultiLevel struct {
 	levels unsafe.Pointer
 	mutex  sync.Mutex
 }
 
+// Record records teh given value with the level associated with the given
+// key. New Keys are lazily created as required.
 func (multi *MultiLevel) Record(key string, value float64) {
 	multi.get(key).Record(value)
 }
 
+// ReadMeter calls ReadMeter on all underlying levels where all the keys are
+// prefixed by the key name used in the calls to Record.
 func (multi *MultiLevel) ReadMeter(delta time.Duration) map[string]float64 {
 	result := make(map[string]float64)
 

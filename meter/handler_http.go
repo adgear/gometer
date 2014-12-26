@@ -12,16 +12,28 @@ import (
 	"time"
 )
 
+// HTTPHandler is used forward the recorded meter values to a remote HTTP
+// endpoint.
 type HTTPHandler struct {
-	URL    string
+
+	// URL is the remote HTTP endpoint where meter values should be sent
+	// to. This field must be set.
+	URL string
+
+	// Method is the HTTP method used when forwarding over HTTP. This field must
+	// be set.
 	Method string
 
+	// HTTPClient can be used to optionally customize the HTTPClient used to
+	// make the HTTP requests.
 	HTTPClient *http.Client
 
 	initialize sync.Once
 	client     *rest.Client
 }
 
+// Init initializes the object. Note that calling this is optional in which case
+// the object lazily initializes itself as needed.
 func (handler *HTTPHandler) Init() {
 	handler.initialize.Do(handler.init)
 }
@@ -49,6 +61,7 @@ func (handler *HTTPHandler) init() {
 	}
 }
 
+// HandleMeters sends the given values to the configured remote HTTP endpoint.
 func (handler *HTTPHandler) HandleMeters(values map[string]float64) {
 	handler.Init()
 

@@ -9,15 +9,22 @@ import (
 	"sync"
 )
 
+// DefaultPathREST is used as the value of PathPrefix in RESTHandler if no
+// values are provided.
 const DefaultPathREST = "/debug/meter"
 
+// RESTHandler provides a REST interface for the values polled from the meters.
 type RESTHandler struct {
+
+	// PathPrefix is the HTTP base path where the REST interface will be
+	// registered at.
 	PathPrefix string
 
 	mutex sync.Mutex
 	last  map[string]float64
 }
 
+// RESTRoutes returns the list of REST routes.
 func (handler *RESTHandler) RESTRoutes() rest.Routes {
 	prefix := handler.PathPrefix
 	if prefix == "" {
@@ -30,6 +37,7 @@ func (handler *RESTHandler) RESTRoutes() rest.Routes {
 	}
 }
 
+// HandleMeters records the aggregated metrics to be used by the REST interface.
 func (handler *RESTHandler) HandleMeters(meters map[string]float64) {
 	handler.mutex.Lock()
 
@@ -38,6 +46,7 @@ func (handler *RESTHandler) HandleMeters(meters map[string]float64) {
 	handler.mutex.Unlock()
 }
 
+// Get returns the last seen set of metrics.
 func (handler *RESTHandler) Get() map[string]float64 {
 	handler.mutex.Lock()
 
@@ -48,6 +57,7 @@ func (handler *RESTHandler) Get() map[string]float64 {
 	return result
 }
 
+// GetSubstr returns the set of metrics filtered to contain the given substring.
 func (handler *RESTHandler) GetSubstr(substr string) map[string]float64 {
 	handler.mutex.Lock()
 
