@@ -70,6 +70,7 @@ func (carbon *CarbonHandler) run() {
 }
 
 func (carbon *CarbonHandler) connect(URL string) {
+
 	if conn := carbon.conns[URL]; conn != nil {
 		conn.Close()
 	}
@@ -133,5 +134,6 @@ func (carbon *CarbonHandler) write(conn net.Conn, values map[string]float64, ts 
 		}
 	}
 
+	err = writer.Flush()
 	return
 }

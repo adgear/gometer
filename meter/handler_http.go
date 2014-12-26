@@ -53,11 +53,11 @@ func (handler *HTTPHandler) HandleMeters(values map[string]float64) {
 	handler.Init()
 
 	var body struct {
-		Timestamp time.Time          `json:"timestamp"`
+		Timestamp int64              `json:"timestamp"`
 		Values    map[string]float64 `json:"values"`
 	}
 
-	body.Timestamp = time.Now()
+	body.Timestamp = time.Now().Unix()
 	body.Values = values
 
 	resp := handler.client.NewRequest(handler.Method).SetBody(body).Send()
