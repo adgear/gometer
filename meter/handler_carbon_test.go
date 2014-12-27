@@ -82,10 +82,19 @@ func (carbon *TestCarbon) Init() {
 	carbon.initialize.Do(carbon.init)
 }
 
-func (carbon *TestCarbon) Start() { carbon.startC <- 1 }
-func (carbon *TestCarbon) Stop()  { carbon.stopC <- 1 }
+func (carbon *TestCarbon) Start() {
+	carbon.Init()
+	carbon.startC <- 1
+}
+
+func (carbon *TestCarbon) Stop() {
+	carbon.Init()
+	carbon.stopC <- 1
+}
 
 func (carbon *TestCarbon) Expect(title string, exp map[string]float64) {
+	carbon.Init()
+
 	values := make(map[string]float64)
 
 	done := false
@@ -112,8 +121,14 @@ func (carbon *TestCarbon) init() {
 	carbon.listenC = make(chan net.Listener)
 	carbon.connC = make(chan net.Conn)
 
-	go carbon.run()
 	go carbon.accept()
+
+	listen := <-carbon.listenC
+	fmt.Printf("LOG(%s): listening on: %s\n", carbon.Name, listen.Addr().String())
+	carbon.URL = listen.Addr().String()
+	carbon.listen = listen
+
+	go carbon.run()
 }
 
 func (carbon *TestCarbon) accept() {

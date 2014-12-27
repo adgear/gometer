@@ -60,13 +60,13 @@ func (carbon *CarbonHandler) init() {
 		klog.KFatal("meter.carbon.init.error", "no URL configured")
 	}
 
+	carbon.connC = make(chan msgConn)
+	carbon.valuesC = make(chan map[string]float64)
+
 	carbon.conns = make(map[string]net.Conn)
 	for _, URL := range carbon.URLs {
 		carbon.connect(URL)
 	}
-
-	carbon.connC = make(chan msgConn)
-	carbon.valuesC = make(chan map[string]float64)
 
 	go carbon.run()
 }
