@@ -34,6 +34,7 @@ type Poller struct {
 	addC    chan msgMeter
 	removeC chan string
 	handleC chan Handler
+	prefixC chan string
 }
 
 type msgMeter struct {
@@ -67,6 +68,12 @@ func (poller *Poller) Handle(handler Handler) {
 	poller.handleC <- handler
 }
 
+// SetKeyPrefix changes the prefix applied to all keys.
+func (poller *Poller) SetKeyPrefix(prefix string) {
+	poller.Init()
+	poller.prefixC <- prefix
+}
+
 func (poller *Poller) init() {
 	if poller.Meters == nil {
 		poller.Meters = make(map[string]Meter)
@@ -79,6 +86,7 @@ func (poller *Poller) init() {
 	poller.addC = make(chan msgMeter)
 	poller.removeC = make(chan string)
 	poller.handleC = make(chan Handler)
+	poller.prefixC = make(chan string)
 
 	go poller.run()
 }
@@ -96,6 +104,9 @@ func (poller *Poller) run() {
 
 		case handler := <-poller.handleC:
 			poller.handle(handler)
+
+		case prefix := <-poller.prefixC:
+			poller.KeyPrefix = prefix
 
 		case <-tickC:
 			poller.poll()
@@ -135,6 +146,11 @@ func (poller *Poller) poll() {
 // DefaultPoller is the Poller object used by the global Add, Remove and Handle
 // functions.
 var DefaultPoller Poller
+
+// SetKeyPrefix changes the key prefix of the global poller.
+func SetKeyPrefix(prefix string) {
+	DefaultPoller.SetKeyPrefix(prefix)
+}
 
 // Add associates the given meter with the given key and begins to periodically
 // poll the meter.
