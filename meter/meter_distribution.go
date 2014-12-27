@@ -59,12 +59,10 @@ func (dist *Distribution) RecordDuration(duration time.Duration) {
 // 90th and 99th percentile) and the count, min and max over the entire
 // distribution. All recorded elements are then discarded from the distribution.
 func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
-	newState := newDistribution(dist.getSize(), dist.getSeed())
-
 	dist.mutex.Lock()
 
 	oldState := dist.state
-	dist.state = newState
+	dist.state = newDistribution(dist.getSize(), dist.getSeed())
 
 	dist.mutex.Unlock()
 
