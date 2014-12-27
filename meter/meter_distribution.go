@@ -132,6 +132,9 @@ func (array float64Array) Swap(i, j int)      { array[i], array[j] = array[j], a
 func (array float64Array) Less(i, j int) bool { return array[i] < array[j] }
 
 func (dist *distribution) Read() map[string]float64 {
+	dist.mutex.Lock()
+	defer dist.mutex.Unlock()
+
 	if dist.count == 0 {
 		return map[string]float64{}
 	}

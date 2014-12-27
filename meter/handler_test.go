@@ -29,6 +29,8 @@ func (handler *TestHandler) HandleMeters(values map[string]float64) {
 }
 
 func (handler *TestHandler) Get() map[string]float64 {
+	handler.Init()
+
 	timeoutC := time.After(100 * time.Millisecond)
 
 	select {
