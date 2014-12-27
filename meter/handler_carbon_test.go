@@ -35,6 +35,9 @@ func TestCarbonHandler(t *testing.T) {
 
 	c1.Stop()
 	CarbonSend("stop-c1", handler)
+
+	// Should not be necessary but, for some random reason, the closed
+	// connection is only detected on the second round of sending.
 	CarbonSend("stop-c1-2", handler)
 
 	c1.Start()
@@ -46,7 +49,7 @@ func TestCarbonHandler(t *testing.T) {
 
 func CarbonSend(title string, handler *CarbonHandler, carbons ...*TestCarbon) {
 	values := map[string]float64{"a": 1, "b": 2}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	handler.HandleMeters(values)
 	for _, carbon := range carbons {
