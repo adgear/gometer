@@ -86,7 +86,7 @@ func (handler *RESTHandler) get(filter func(string) bool) map[string]float64 {
 	result := make(map[string]float64)
 
 	for key, value := range handler.last {
-		if !filter(key) {
+		if filter(key) {
 			result[key] = value
 		}
 	}
