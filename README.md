@@ -2,18 +2,6 @@
 
 Metrics gathering library.
 
-Advantages over gometrics:
-- Lower overhead (see the various benchmarks)
-- Even more modular and flexible architecture.
-- Is global so isn't hindered by function calls.
-- Doesn't couple the output with the internal go representation of metrics.
-- Supports all the existing gometrics features and a few more.
-
-Disadvantages over gometrics:
-- Is a bit more intrusive in the existing object classes.
-- Makes it harder to document metrics (can be worked around).
-- Doesn't impose naming convention on metrics.
-
 ## Installation ##
 
 You can download the code via the usual go utilities:
@@ -32,6 +20,25 @@ make test
 Note that the usual go utilities will work just fine but we require that all
 commits pass the full suite of tests and static analysis tools.
 
+# Examples #
+
+Usage examples are available in this [**test suite**](meter/example_test.go).
+
+# Why not gometrics? #
+
+gometer was designed to do away with some of the fundamental performance issues
+of gometrics while also improving on the overall architecture. Unfortunately,
+performance comes at the cost of being a little more intrusive the code base
+where it's used.
+
+Main improvements are:
+- Lower overhead (CPU and allocations)
+- Modular architecture for both the metrics and the handlers.
+- Global poller removes the arbitrary function call boundaries.
+- Metric output is not coupled to the go struct representation.
+
+The downsides are:
+- User is responsible for storing and registring the meters.
 
 ## License ##
 
