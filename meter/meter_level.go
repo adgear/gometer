@@ -28,6 +28,11 @@ func (level *Level) Record(value float64) {
 	level.mutex.Unlock()
 }
 
+// RecordInt is similar to Record but with int values.
+func (level *Level) RecordInt(value int) {
+	level.Record(float64(value))
+}
+
 // ReadMeter returns the currently set level if not equal to 0.
 func (level *Level) ReadMeter(_ time.Duration) map[string]float64 {
 	result := make(map[string]float64)

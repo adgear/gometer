@@ -31,6 +31,11 @@ func (multi *MultiDistribution) Record(key string, value float64) {
 	multi.get(key).Record(value)
 }
 
+// RecordDuration similar to Record but with time.Duration values.
+func (multi *MultiDistribution) RecordDuration(key string, value time.Duration) {
+	multi.get(key).RecordDuration(value)
+}
+
 // ReadMeter calls ReadMeter on all the underlying distributions where all the
 // keys are prefixed by the key name used in the calls to Record.
 func (multi *MultiDistribution) ReadMeter(delta time.Duration) map[string]float64 {

@@ -54,8 +54,7 @@ func (dist *Distribution) Record(value float64) {
 	(*distribution)(state).Record(value)
 }
 
-// RecordDuration is a convenience wrapper around Record for time.Duration
-// values.
+// RecordDuration similar to Record but with time.Duration values.
 func (dist *Distribution) RecordDuration(duration time.Duration) {
 	dist.Record(float64(duration))
 }

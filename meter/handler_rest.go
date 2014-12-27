@@ -24,6 +24,14 @@ type RESTHandler struct {
 	last  map[string]float64
 }
 
+// NewRESTHandler creates a new REST interface and registers it with the default
+// gorest Mux.
+func NewRESTHandler(path string) *RESTHandler {
+	handler := &RESTHandler{PathPrefix: path}
+	rest.AddService(handler)
+	return handler
+}
+
 // RESTRoutes returns the list of REST routes.
 func (handler *RESTHandler) RESTRoutes() rest.Routes {
 	prefix := handler.PathPrefix
