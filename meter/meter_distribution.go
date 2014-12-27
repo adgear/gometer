@@ -7,9 +7,7 @@ import (
 	"math/rand"
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 // DefaultDistributionSize is used if Size is not set in Distribution.
@@ -35,23 +33,21 @@ type Distribution struct {
 	// SamplingSeed is the initial seed for the RNG used during sampling.
 	SamplingSeed int64
 
-	state unsafe.Pointer
+	mutex sync.Mutex
+	state *distribution
 }
 
 // Record adds the given value to the distribution with a probability based on
 // the number of elements recorded since the last call to ReadMeter.
 func (dist *Distribution) Record(value float64) {
-	state := atomic.LoadPointer(&dist.state)
+	dist.mutex.Lock()
 
-	if state == nil {
-		state = unsafe.Pointer(newDistribution(dist.getSize(), dist.getSeed()))
-
-		if !atomic.CompareAndSwapPointer(&dist.state, nil, state) {
-			state = atomic.LoadPointer(&dist.state)
-		}
+	if dist.state == nil {
+		dist.state = newDistribution(dist.getSize(), dist.getSeed())
 	}
+	dist.state.Record(value)
 
-	(*distribution)(state).Record(value)
+	dist.mutex.Unlock()
 }
 
 // RecordDuration similar to Record but with time.Duration values.
@@ -64,13 +60,19 @@ func (dist *Distribution) RecordDuration(duration time.Duration) {
 // distribution. All recorded elements are then discarded from the distribution.
 func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
 	newState := newDistribution(dist.getSize(), dist.getSeed())
-	oldState := atomic.SwapPointer(&dist.state, unsafe.Pointer(newState))
+
+	dist.mutex.Lock()
+
+	oldState := dist.state
+	dist.state = newState
+
+	dist.mutex.Unlock()
 
 	if oldState == nil {
 		return make(map[string]float64)
 	}
 
-	return (*distribution)(oldState).Read()
+	return oldState.Read()
 }
 
 func (dist *Distribution) getSize() int {
@@ -81,7 +83,8 @@ func (dist *Distribution) getSize() int {
 }
 
 func (dist *Distribution) getSeed() int64 {
-	return atomic.AddInt64(&dist.SamplingSeed, 1)
+	dist.SamplingSeed++
+	return dist.SamplingSeed
 }
 
 type distribution struct {
@@ -89,8 +92,7 @@ type distribution struct {
 	count    int
 	min, max float64
 
-	rand  *rand.Rand
-	mutex sync.Mutex
+	rand *rand.Rand
 }
 
 func newDistribution(size int, seed int64) *distribution {
@@ -103,8 +105,6 @@ func newDistribution(size int, seed int64) *distribution {
 }
 
 func (dist *distribution) Record(value float64) {
-	dist.mutex.Lock()
-
 	dist.count++
 
 	if dist.count <= len(dist.items) {
@@ -121,8 +121,6 @@ func (dist *distribution) Record(value float64) {
 	if value > dist.max {
 		dist.max = value
 	}
-
-	dist.mutex.Unlock()
 }
 
 type float64Array []float64
@@ -132,9 +130,6 @@ func (array float64Array) Swap(i, j int)      { array[i], array[j] = array[j], a
 func (array float64Array) Less(i, j int) bool { return array[i] < array[j] }
 
 func (dist *distribution) Read() map[string]float64 {
-	dist.mutex.Lock()
-	defer dist.mutex.Unlock()
-
 	if dist.count == 0 {
 		return map[string]float64{}
 	}
