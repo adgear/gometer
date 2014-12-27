@@ -41,7 +41,8 @@ func (handler *RESTHandler) RESTRoutes() rest.Routes {
 
 	return []*rest.Route{
 		rest.NewRoute(prefix, "GET", handler.Get),
-		rest.NewRoute(prefix+"/filter/:substr", "GET", handler.GetSubstr),
+		rest.NewRoute(prefix+"/prefix/:substr", "GET", handler.GetPrefix),
+		rest.NewRoute(prefix+"/substr/:substr", "GET", handler.GetSubstr),
 	}
 }
 
@@ -65,14 +66,27 @@ func (handler *RESTHandler) Get() map[string]float64 {
 	return result
 }
 
+// GetPrefix returns the set of metrics filtered to have the given prefix.
+func (handler *RESTHandler) GetPrefix(prefix string) map[string]float64 {
+	return handler.get(func(key string) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
 // GetSubstr returns the set of metrics filtered to contain the given substring.
 func (handler *RESTHandler) GetSubstr(substr string) map[string]float64 {
+	return handler.get(func(key string) bool {
+		return strings.Index(key, substr) >= 0
+	})
+}
+
+func (handler *RESTHandler) get(filter func(string) bool) map[string]float64 {
 	handler.mutex.Lock()
 
 	result := make(map[string]float64)
 
 	for key, value := range handler.last {
-		if strings.Index(key, substr) >= 0 {
+		if !filter(key) {
 			result[key] = value
 		}
 	}
