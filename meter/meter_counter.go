@@ -33,3 +33,16 @@ func (counter *Counter) ReadMeter(delta time.Duration) map[string]float64 {
 
 	return result
 }
+
+type counter struct{ value float64 }
+
+func (counter *counter) ReadMeter(delta time.Duration) map[string]float64 {
+	result := make(map[string]float64)
+
+	if counter.value > 0 {
+		result[""] = float64(counter.value) * (float64(time.Second) / float64(delta))
+		counter.value = 0
+	}
+
+	return result
+}

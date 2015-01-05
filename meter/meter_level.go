@@ -47,3 +47,15 @@ func (level *Level) ReadMeter(_ time.Duration) map[string]float64 {
 
 	return result
 }
+
+type level struct{ value float64 }
+
+func (level *level) ReadMeter(delta time.Duration) map[string]float64 {
+	result := make(map[string]float64)
+
+	if level.value > 0 {
+		result[""] = level.value
+	}
+
+	return result
+}

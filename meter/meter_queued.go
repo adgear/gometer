@@ -74,6 +74,22 @@ func (queued *Queued) New() Queue {
 	return Queue{make([]Metric, DefaultQueueSize)[:0]}
 }
 
+func (queued *Queued) ReadMeter(delta time.Duration) map[string]float64 {
+	result := make(map[string]float64)
+
+	queued.mutex.Lock()
+
+	for prefix, meter := range queued.meters {
+		for suffix, value := range meter.ReadMeter(delta) {
+			result[Join(prefix, suffix)] = value
+		}
+	}
+
+	queued.mutex.Unlock()
+
+	return result
+}
+
 func (queued *Queued) Record(queue Queue) error {
 	queued.mutex.Lock()
 
@@ -137,45 +153,4 @@ func (queued *Queued) Record(queue Queue) error {
 	queued.mutex.Unlock()
 
 	return nil
-}
-
-func (queued *Queued) ReadMeter(delta time.Duration) map[string]float64 {
-	result := make(map[string]float64)
-
-	queued.mutex.Lock()
-
-	for prefix, meter := range queued.meters {
-		for suffix, value := range meter.ReadMeter(delta) {
-			result[Join(prefix, suffix)] = value
-		}
-	}
-
-	queued.mutex.Unlock()
-
-	return result
-}
-
-type counter struct{ value float64 }
-
-func (counter *counter) ReadMeter(delta time.Duration) map[string]float64 {
-	result := make(map[string]float64)
-
-	if counter.value > 0 {
-		result[""] = float64(counter.value) * (float64(time.Second) / float64(delta))
-		counter.value = 0
-	}
-
-	return result
-}
-
-type level struct{ value float64 }
-
-func (level *level) ReadMeter(delta time.Duration) map[string]float64 {
-	result := make(map[string]float64)
-
-	if level.value > 0 {
-		result[""] = level.value
-	}
-
-	return result
 }
