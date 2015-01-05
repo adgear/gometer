@@ -58,7 +58,7 @@ func (dist *Distribution) RecordDuration(duration time.Duration) {
 // ReadMeter computes various statistic over the sampled distribution (50th,
 // 90th and 99th percentile) and the count, min and max over the entire
 // distribution. All recorded elements are then discarded from the distribution.
-func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
+func (dist *Distribution) ReadMeter(delta time.Duration) map[string]float64 {
 	dist.mutex.Lock()
 
 	oldState := dist.state
@@ -70,7 +70,7 @@ func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
 		return make(map[string]float64)
 	}
 
-	return oldState.Read()
+	return oldState.ReadMeter(delta)
 }
 
 func (dist *Distribution) getSize() int {
@@ -127,7 +127,7 @@ func (array float64Array) Len() int           { return len(array) }
 func (array float64Array) Swap(i, j int)      { array[i], array[j] = array[j], array[i] }
 func (array float64Array) Less(i, j int) bool { return array[i] < array[j] }
 
-func (dist *distribution) Read() map[string]float64 {
+func (dist *distribution) ReadMeter(_ time.Duration) map[string]float64 {
 	if dist.count == 0 {
 		return map[string]float64{}
 	}
@@ -149,7 +149,7 @@ func (dist *distribution) Read() map[string]float64 {
 		return items[int(index)]
 	}
 
-	return map[string]float64{
+	result := map[string]float64{
 		"count": float64(dist.count),
 		"p00":   dist.min,
 		"p50":   percentile(50),
@@ -157,4 +157,10 @@ func (dist *distribution) Read() map[string]float64 {
 		"p99":   percentile(99),
 		"pmx":   dist.max,
 	}
+
+	dist.count = 0
+	dist.min = 0
+	dist.max = 0
+
+	return result
 }
