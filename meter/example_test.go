@@ -12,12 +12,12 @@ import (
 func ExampleMeter() {
 
 	// First we need to define our meters where all the recorded stats will be
-	// stored. Meters comes in 3 flavours (Counter, Distribution and Level)
-	// along with their multi variant (MultiCounter, MultiDistribution and
-	// MultiLevel).
+	// stored. Meters comes in 3 flavours (Counter, Histogram and Gauge)
+	// along with their multi variant (MultiCounter, MultiHistogram and
+	// MultiGauge).
 	var counter meter.Counter
-	var dist meter.Distribution
-	var level meter.Level
+	var dist meter.Histogram
+	var gauge meter.Gauge
 	var multi meter.MultiCounter
 
 	// Next we register our meters with the global meter poller which will
@@ -25,7 +25,7 @@ func ExampleMeter() {
 	// be unregistered via the Remove function.
 	meter.Add("meters.hits", &counter)
 	meter.Add("meters.latency", &dist)
-	meter.Add("meters.level", &level)
+	meter.Add("meters.gauge", &gauge)
 	meter.Add("meters.result", &multi)
 
 	// We then need something that will listen to the values aggregated by the
@@ -40,36 +40,36 @@ func ExampleMeter() {
 
 	// Next up we'll record some values with our meters.
 
-	counter.RecordHit()
-	counter.RecordCount(10)
+	counter.Hit()
+	counter.Count(10)
 
 	for i := 0; i < 100; i++ {
 		dist.Record(float64(i))
 	}
 
-	level.Record(5)
+	gauge.Change(5)
 
-	multi.RecordHit("err")
-	multi.RecordCount("ok", 10)
+	multi.Hit("err")
+	multi.Count("ok", 10)
 
 	// Finally, we'll finish off the test by reading the value and printing them
 	// out.
 	SortAndPrint(<-resultC)
 
 	// Output:
+	// meters.gauge: 5.000000
 	// meters.hits: 11.000000
 	// meters.latency.count: 100.000000
-	// meters.latency.p00: 0.000000
+	// meters.latency.max: 99.000000
+	// meters.latency.min: 0.000000
 	// meters.latency.p50: 50.000000
 	// meters.latency.p90: 90.000000
 	// meters.latency.p99: 99.000000
-	// meters.latency.pmx: 99.000000
-	// meters.level: 5.000000
 	// meters.result.err: 1.000000
 	// meters.result.ok: 10.000000
 }
 
-// SoftAndPrint prints the map in a deterministic manner such that we can
+// SortAndPrint prints the map in a deterministic manner such that we can
 // reliably check the output of our example. This is strictly boilerplate for
 // the purpose of the example and is not required in actual code.
 func SortAndPrint(values map[string]float64) {

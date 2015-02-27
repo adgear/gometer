@@ -16,16 +16,16 @@ type MultiCounter struct {
 	mutex    sync.Mutex
 }
 
-// RecordHit calls RecordHit on the level associated with the given key. New
-// Keys are lazily created as required.
-func (multi *MultiCounter) RecordHit(key string) {
-	multi.get(key).RecordHit()
+// Hit calls Hit on the counter associated with the given key. New Keys are
+// lazily created as required.
+func (multi *MultiCounter) Hit(key string) {
+	multi.get(key).Hit()
 }
 
-// RecordCount calls RecordCount on the level associated with the given key. New
-// Keys are lazily created as required.
-func (multi *MultiCounter) RecordCount(key string, count uint64) {
-	multi.get(key).RecordCount(count)
+// Count calls Count on the counter associated with the given key. New Keys are
+// lazily created as required.
+func (multi *MultiCounter) Count(key string, count uint64) {
+	multi.get(key).Count(count)
 }
 
 // ReadMeter calls ReadMeter on all underlying counters where all the keys are

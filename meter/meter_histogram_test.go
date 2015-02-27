@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func TestDistribution_Seq(t *testing.T) {
-	var dist Distribution
+func TestHistogram_Seq(t *testing.T) {
+	var dist Histogram
 
 	for i := 1; i <= 10000; i = i * 2 {
 		for j := 0; j < i; j++ {
@@ -20,11 +20,11 @@ func TestDistribution_Seq(t *testing.T) {
 	}
 }
 
-func TestDistribution_Para(t *testing.T) {
+func TestHistogram_Para(t *testing.T) {
 	workers := 10
 	records := 1000
 
-	var dist Distribution
+	var dist Histogram
 
 	stopReaderC := make(chan int)
 	resultC := make(chan int)
@@ -79,11 +79,11 @@ func CheckDist(t *testing.T, values map[string]float64, n int) {
 		t.Errorf("FAIL(%d): count=%d != %d", n, count, n)
 	}
 
-	if min := int(values["p00"]); min != 0 {
+	if min := int(values["min"]); min != 0 {
 		t.Errorf("FAIL(%d): min=%d != %d", n, min, 0)
 	}
 
-	if max := int(values["pmx"]); max != n-1 {
+	if max := int(values["max"]); max != n-1 {
 		t.Errorf("FAIL(%d): max=%d != %d", n, max, n-1)
 	}
 
@@ -104,8 +104,8 @@ func CheckDist(t *testing.T, values map[string]float64, n int) {
 	checkPercentile(99)
 }
 
-func BenchmarkDistribution_Seq(b *testing.B) {
-	var dist Distribution
+func BenchmarkHistogram_Seq(b *testing.B) {
+	var dist Histogram
 
 	b.ResetTimer()
 
@@ -114,8 +114,8 @@ func BenchmarkDistribution_Seq(b *testing.B) {
 	}
 }
 
-func BenchmarkDistribution_Para(b *testing.B) {
-	var dist Distribution
+func BenchmarkHistogram_Para(b *testing.B) {
+	var dist Histogram
 
 	b.RunParallel(func(pb *testing.PB) {
 		for i := 0; pb.Next(); i++ {

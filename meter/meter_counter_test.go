@@ -16,7 +16,7 @@ func TestCounter_Normalize(t *testing.T) {
 }
 
 func ExpectCount(t *testing.T, counter *Counter, delta time.Duration, exp float64) {
-	counter.RecordCount(100)
+	counter.Count(100)
 	if value := counter.ReadMeter(delta)[""]; value != exp {
 		t.Errorf("FAIL: delta=%s -> value=%f != exp=%f", delta, value, exp)
 	}

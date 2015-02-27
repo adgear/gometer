@@ -9,36 +9,36 @@ import (
 	"unsafe"
 )
 
-// MultiDistribution associates Distribution objects to keys which can be
+// MultiHistogram associates Histogram objects to keys which can be
 // selected when recording. Is completely go-routine safe.
-type MultiDistribution struct {
+type MultiHistogram struct {
 
-	// Size is used to initialize the Size member of the underlying Distribution
+	// Size is used to initialize the Size member of the underlying Histogram
 	// objects.
 	Size int
 
 	// SamplingSeed is used to initialize the SamplingSeed member of underlying
-	// Distribution objects.
+	// Histogram objects.
 	SamplingSeed int64
 
 	dists unsafe.Pointer
 	mutex sync.Mutex
 }
 
-// Record adds the given value to the distribution associated with the given
+// Record adds the given value to the histogram associated with the given
 // key. New keys are lazily created as required.
-func (multi *MultiDistribution) Record(key string, value float64) {
+func (multi *MultiHistogram) Record(key string, value float64) {
 	multi.get(key).Record(value)
 }
 
 // RecordDuration similar to Record but with time.Duration values.
-func (multi *MultiDistribution) RecordDuration(key string, value time.Duration) {
+func (multi *MultiHistogram) RecordDuration(key string, value time.Duration) {
 	multi.get(key).RecordDuration(value)
 }
 
-// ReadMeter calls ReadMeter on all the underlying distributions where all the
+// ReadMeter calls ReadMeter on all the underlying histograms where all the
 // keys are prefixed by the key name used in the calls to Record.
-func (multi *MultiDistribution) ReadMeter(delta time.Duration) map[string]float64 {
+func (multi *MultiHistogram) ReadMeter(delta time.Duration) map[string]float64 {
 	result := make(map[string]float64)
 
 	old := multi.load()
@@ -55,7 +55,7 @@ func (multi *MultiDistribution) ReadMeter(delta time.Duration) map[string]float6
 	return result
 }
 
-func (multi *MultiDistribution) get(key string) *Distribution {
+func (multi *MultiHistogram) get(key string) *Histogram {
 	if dists := multi.load(); dists != nil {
 		if dist, ok := (*dists)[key]; ok {
 			return dist
@@ -72,8 +72,8 @@ func (multi *MultiDistribution) get(key string) *Distribution {
 		}
 	}
 
-	newDists := new(map[string]*Distribution)
-	*newDists = make(map[string]*Distribution)
+	newDists := new(map[string]*Histogram)
+	*newDists = make(map[string]*Histogram)
 
 	if oldDists != nil {
 		for key, dist := range *oldDists {
@@ -81,7 +81,7 @@ func (multi *MultiDistribution) get(key string) *Distribution {
 		}
 	}
 
-	dist := &Distribution{
+	dist := &Histogram{
 		Size:         multi.Size,
 		SamplingSeed: multi.SamplingSeed,
 	}
@@ -91,10 +91,10 @@ func (multi *MultiDistribution) get(key string) *Distribution {
 	return dist
 }
 
-func (multi *MultiDistribution) load() *map[string]*Distribution {
-	return (*map[string]*Distribution)(atomic.LoadPointer(&multi.dists))
+func (multi *MultiHistogram) load() *map[string]*Histogram {
+	return (*map[string]*Histogram)(atomic.LoadPointer(&multi.dists))
 }
 
-func (multi *MultiDistribution) store(dists *map[string]*Distribution) {
+func (multi *MultiHistogram) store(dists *map[string]*Histogram) {
 	atomic.StorePointer(&multi.dists, unsafe.Pointer(dists))
 }

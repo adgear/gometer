@@ -16,13 +16,13 @@ func TestCounterMulti_Seq(t *testing.T) {
 	var multi MultiCounter
 
 	for i := 0; i < 3; i++ {
-		multi.RecordHit("a")
-		multi.RecordHit("b")
-		multi.RecordHit("a")
-		multi.RecordHit("a")
-		multi.RecordHit("c")
-		multi.RecordHit("b")
-		multi.RecordHit("b")
+		multi.Hit("a")
+		multi.Hit("b")
+		multi.Hit("a")
+		multi.Hit("a")
+		multi.Hit("c")
+		multi.Hit("b")
+		multi.Hit("b")
 
 		values := multi.ReadMeter(1 * time.Second)
 		CheckValues(t, "seq", values, map[string]float64{"a": 3, "b": 3, "c": 1})
@@ -61,7 +61,7 @@ func TestCounterMulti_Para(t *testing.T) {
 	worker := func() {
 		for i := 0; i < increments; i++ {
 			for j := 0; j < keys; j++ {
-				multi.RecordHit(strconv.Itoa(j))
+				multi.Hit(strconv.Itoa(j))
 			}
 		}
 		workerDoneC <- 1
@@ -103,7 +103,7 @@ func BenchMultiCounterSeq(b *testing.B, keys int) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		multi.RecordHit(strconv.Itoa(i % keys))
+		multi.Hit(strconv.Itoa(i % keys))
 	}
 }
 
@@ -125,7 +125,7 @@ func BenchMultiCounterPara(b *testing.B, keys int) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for i := 0; pb.Next(); i++ {
-			multi.RecordHit(strconv.Itoa(i % keys))
+			multi.Hit(strconv.Itoa(i % keys))
 		}
 	})
 }

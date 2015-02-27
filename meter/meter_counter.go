@@ -11,13 +11,13 @@ import (
 // go-routine safe.
 type Counter struct{ value uint64 }
 
-// RecordHit adds 1 to the counter.
-func (counter *Counter) RecordHit() {
+// Hit adds 1 to the counter.
+func (counter *Counter) Hit() {
 	atomic.AddUint64(&counter.value, 1)
 }
 
-// RecordCount adds the given value to the counter.
-func (counter *Counter) RecordCount(count uint64) {
+// Count adds the given value to the counter.
+func (counter *Counter) Count(count uint64) {
 	atomic.AddUint64(&counter.value, count)
 }
 

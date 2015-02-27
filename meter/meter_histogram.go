@@ -10,23 +10,23 @@ import (
 	"time"
 )
 
-// DefaultDistributionSize is used if Size is not set in Distribution.
-const DefaultDistributionSize = 1000
+// DefaultHistogramSize is used if Size is not set in Histogram.
+const DefaultHistogramSize = 1000
 
-// Distribution aggregates metrics over a distribution of values.
+// Histogram aggregates metrics over a histogram of values.
 //
 // Record will add up to a maximum of Size elements after which new elements
 // will be randomly sampled with a probability that depends on the number of
-// elements recorded. This schemes ensures that a distribution has a constant
+// elements recorded. This schemes ensures that a histogram has a constant
 // memory footprint and doesn't need to allocate for calls to Record.
 //
-// ReadMeter will compute percentiles over the sampled distribution and the min
-// and max value seen over the entire distribution.
+// ReadMeter will compute percentiles over the sampled histogram and the min
+// and max value seen over the entire histogram.
 //
-// Distribution is completely go-routine safe.
-type Distribution struct {
+// Histogram is completely go-routine safe.
+type Histogram struct {
 
-	// Size is maximum number of elements that the distribution can hold. Above
+	// Size is maximum number of elements that the histogram can hold. Above
 	// this amount, new values are sampled.
 	Size int
 
@@ -34,16 +34,16 @@ type Distribution struct {
 	SamplingSeed int64
 
 	mutex sync.Mutex
-	state *distribution
+	state *histogram
 }
 
-// Record adds the given value to the distribution with a probability based on
+// Record adds the given value to the histogram with a probability based on
 // the number of elements recorded since the last call to ReadMeter.
-func (dist *Distribution) Record(value float64) {
+func (dist *Histogram) Record(value float64) {
 	dist.mutex.Lock()
 
 	if dist.state == nil {
-		dist.state = newDistribution(dist.getSize(), dist.getSeed())
+		dist.state = newHistogram(dist.getSize(), dist.getSeed())
 	}
 	dist.state.Record(value)
 
@@ -51,18 +51,23 @@ func (dist *Distribution) Record(value float64) {
 }
 
 // RecordDuration similar to Record but with time.Duration values.
-func (dist *Distribution) RecordDuration(duration time.Duration) {
+func (dist *Histogram) RecordDuration(duration time.Duration) {
 	dist.Record(float64(duration))
 }
 
-// ReadMeter computes various statistic over the sampled distribution (50th,
+// RecordSince records a duration elapsed since the given time.
+func (dist *Histogram) RecordSince(t0 time.Time) {
+	dist.RecordDuration(time.Since(t0))
+}
+
+// ReadMeter computes various statistic over the sampled histogram (50th,
 // 90th and 99th percentile) and the count, min and max over the entire
-// distribution. All recorded elements are then discarded from the distribution.
-func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
+// histogram. All recorded elements are then discarded from the histogram.
+func (dist *Histogram) ReadMeter(_ time.Duration) map[string]float64 {
 	dist.mutex.Lock()
 
 	oldState := dist.state
-	dist.state = newDistribution(dist.getSize(), dist.getSeed())
+	dist.state = newHistogram(dist.getSize(), dist.getSeed())
 
 	dist.mutex.Unlock()
 
@@ -73,19 +78,19 @@ func (dist *Distribution) ReadMeter(_ time.Duration) map[string]float64 {
 	return oldState.Read()
 }
 
-func (dist *Distribution) getSize() int {
+func (dist *Histogram) getSize() int {
 	if dist.Size == 0 {
-		return DefaultDistributionSize
+		return DefaultHistogramSize
 	}
 	return dist.Size
 }
 
-func (dist *Distribution) getSeed() int64 {
+func (dist *Histogram) getSeed() int64 {
 	dist.SamplingSeed++
 	return dist.SamplingSeed
 }
 
-type distribution struct {
+type histogram struct {
 	items    []float64
 	count    int
 	min, max float64
@@ -93,8 +98,8 @@ type distribution struct {
 	rand *rand.Rand
 }
 
-func newDistribution(size int, seed int64) *distribution {
-	return &distribution{
+func newHistogram(size int, seed int64) *histogram {
+	return &histogram{
 		items: make([]float64, size),
 		min:   math.MaxFloat64,
 
@@ -102,7 +107,7 @@ func newDistribution(size int, seed int64) *distribution {
 	}
 }
 
-func (dist *distribution) Record(value float64) {
+func (dist *histogram) Record(value float64) {
 	dist.count++
 
 	if dist.count <= len(dist.items) {
@@ -127,7 +132,7 @@ func (array float64Array) Len() int           { return len(array) }
 func (array float64Array) Swap(i, j int)      { array[i], array[j] = array[j], array[i] }
 func (array float64Array) Less(i, j int) bool { return array[i] < array[j] }
 
-func (dist *distribution) Read() map[string]float64 {
+func (dist *histogram) Read() map[string]float64 {
 	if dist.count == 0 {
 		return map[string]float64{}
 	}
@@ -151,10 +156,10 @@ func (dist *distribution) Read() map[string]float64 {
 
 	return map[string]float64{
 		"count": float64(dist.count),
-		"p00":   dist.min,
+		"min":   dist.min,
+		"max":   dist.max,
 		"p50":   percentile(50),
 		"p90":   percentile(90),
 		"p99":   percentile(99),
-		"pmx":   dist.max,
 	}
 }

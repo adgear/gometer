@@ -8,9 +8,9 @@ import (
 )
 
 func TestPoller(t *testing.T) {
-	m0 := &Level{Value: 1}
-	m1 := &Level{Value: 2}
-	m2 := &Level{Value: 3}
+	m0 := &Gauge{Value: 1}
+	m1 := &Gauge{Value: 2}
+	m2 := &Gauge{Value: 3}
 
 	h0 := &TestHandler{T: t}
 	h1 := &TestHandler{T: t}
