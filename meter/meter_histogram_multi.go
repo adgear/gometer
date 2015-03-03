@@ -98,3 +98,7 @@ func (multi *MultiHistogram) load() *map[string]*Histogram {
 func (multi *MultiHistogram) store(dists *map[string]*Histogram) {
 	atomic.StorePointer(&multi.dists, unsafe.Pointer(dists))
 }
+
+func GetMultiHistogram(prefix string) *MultiHistogram {
+	return GetOrAdd(prefix, new(MultiHistogram)).(*MultiHistogram)
+}

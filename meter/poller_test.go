@@ -16,12 +16,12 @@ func TestPoller(t *testing.T) {
 	h1 := &TestHandler{T: t}
 
 	poller := &Poller{
-		Meters:      map[string]Meter{"m0": m0},
-		Handlers:    []Handler{h0},
-		PollingRate: 100 * time.Millisecond,
+		Meters:   map[string]Meter{"m0": m0},
+		Handlers: []Handler{h0},
 	}
 
-	poller.Init()
+	poller.Poll("", 100*time.Millisecond)
+
 	WaitForPoll()
 	h0.Expect("init", map[string]float64{"m0": 1})
 

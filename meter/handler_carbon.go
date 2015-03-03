@@ -37,6 +37,10 @@ type CarbonHandler struct {
 	valuesC chan map[string]float64
 }
 
+func NewCarbonHandler(URL string) *CarbonHandler {
+	return &CarbonHandler{URLs: []string{URL}}
+}
+
 // Init can be optionally used to initialize the object. Note that the handler
 // will lazily initialize itself as needed.
 func (carbon *CarbonHandler) Init() {
@@ -141,8 +145,6 @@ func (carbon *CarbonHandler) write(conn net.Conn, values map[string]float64, ts 
 	writer := bufio.NewWriter(conn)
 
 	for key, value := range values {
-		klog.KPrintf("meter.carbon.send.debug", "%s %f %d", key, value, ts)
-
 		if _, err = fmt.Fprintf(writer, "%s %f %d\n", key, value, ts); err != nil {
 			return
 		}

@@ -22,6 +22,14 @@ func (multi *MultiGauge) Change(key string, value float64) {
 	multi.get(key).Change(value)
 }
 
+func (multi *MultiGauge) ChangeDuration(key string, duration time.Duration) {
+	multi.get(key).ChangeDuration(duration)
+}
+
+func (multi *MultiGauge) ChangeSince(key string, t0 time.Time) {
+	multi.get(key).ChangeSince(t0)
+}
+
 // ReadMeter calls ReadMeter on all underlying gauges where all the keys are
 // prefixed by the key name used in the calls to Record.
 func (multi *MultiGauge) ReadMeter(delta time.Duration) map[string]float64 {
@@ -80,4 +88,8 @@ func (multi *MultiGauge) load() *map[string]*Gauge {
 
 func (multi *MultiGauge) store(gauges *map[string]*Gauge) {
 	atomic.StorePointer(&multi.gauges, unsafe.Pointer(gauges))
+}
+
+func GetMultiGauge(prefix string) *MultiGauge {
+	return GetOrAdd(prefix, new(MultiGauge)).(*MultiGauge)
 }

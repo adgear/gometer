@@ -28,6 +28,14 @@ func (gauge *Gauge) Change(value float64) {
 	gauge.mutex.Unlock()
 }
 
+func (gauge *Gauge) ChangeDuration(duration time.Duration) {
+	gauge.Change(float64(duration) / float64(time.Second))
+}
+
+func (gauge *Gauge) ChangeSince(t0 time.Time) {
+	gauge.ChangeDuration(time.Since(t0))
+}
+
 // ReadMeter returns the currently set gauge if not equal to 0.
 func (gauge *Gauge) ReadMeter(_ time.Duration) map[string]float64 {
 	result := make(map[string]float64)
@@ -41,4 +49,8 @@ func (gauge *Gauge) ReadMeter(_ time.Duration) map[string]float64 {
 	gauge.mutex.Unlock()
 
 	return result
+}
+
+func GetGauge(prefix string) *Gauge {
+	return GetOrAdd(prefix, new(Gauge)).(*Gauge)
 }

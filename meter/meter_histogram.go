@@ -52,7 +52,7 @@ func (dist *Histogram) Record(value float64) {
 
 // RecordDuration similar to Record but with time.Duration values.
 func (dist *Histogram) RecordDuration(duration time.Duration) {
-	dist.Record(float64(duration))
+	dist.Record(float64(duration) / float64(time.Second))
 }
 
 // RecordSince records a duration elapsed since the given time.
@@ -162,4 +162,8 @@ func (dist *histogram) Read() map[string]float64 {
 		"p90":   percentile(90),
 		"p99":   percentile(99),
 	}
+}
+
+func GetHistogram(prefix string) *Histogram {
+	return GetOrAdd(prefix, new(Histogram)).(*Histogram)
 }

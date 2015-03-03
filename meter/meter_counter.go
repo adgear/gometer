@@ -33,3 +33,7 @@ func (counter *Counter) ReadMeter(delta time.Duration) map[string]float64 {
 
 	return result
 }
+
+func GetCounter(prefix string) *Counter {
+	return GetOrAdd(prefix, new(Counter)).(*Counter)
+}

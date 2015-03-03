@@ -87,3 +87,7 @@ func (multi *MultiCounter) load() *map[string]*Counter {
 func (multi *MultiCounter) store(counters *map[string]*Counter) {
 	atomic.StorePointer(&multi.counters, unsafe.Pointer(counters))
 }
+
+func GetMultiCounter(prefix string) *MultiCounter {
+	return GetOrAdd(prefix, new(MultiCounter)).(*MultiCounter)
+}
