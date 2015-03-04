@@ -100,7 +100,10 @@ func (meter *process) sampleGolang() {
 	meter.Golang.GcRuns.Count(gcRuns)
 
 	gcPause := uint64(mem.PauseTotalNs - meter.lastMemStats.PauseTotalNs)
-	meter.Golang.GcPauseTime.Change(float64(gcPause/gcRuns) / float64(time.Second))
+	if gcRuns > 0 {
+		gcPause /= gcRuns
+	}
+	meter.Golang.GcPauseTime.Change(float64(gcPause) / float64(time.Second))
 
 	meter.Golang.AllocationRate.Change(float64(mem.TotalAlloc - meter.lastMemStats.TotalAlloc))
 
