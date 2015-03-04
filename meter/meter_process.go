@@ -21,6 +21,18 @@ type process struct {
 	Golang struct {
 		Threads    *Gauge
 		Goroutines *Gauge
+
+		GcRuns      *Counter
+		GcPauseTime *Gauge
+
+		AllocationRate *Gauge
+
+		HeapAlloc    *Gauge
+		HeapSys      *Gauge
+		HeapIdle     *Gauge
+		HeapInuse    *Gauge
+		HeapReleased *Gauge
+		HeapObjects  *Gauge
 	}
 
 	Processor struct {
@@ -46,7 +58,8 @@ type process struct {
 		OutOps *Gauge
 	}
 
-	lastRusage syscall.Rusage
+	lastRusage   syscall.Rusage
+	lastMemStats runtime.MemStats
 }
 
 func ProcessStats(prefix string) {
@@ -57,11 +70,14 @@ func ProcessStats(prefix string) {
 		meter.Boot.Hit()
 		meter.Running.Change(1)
 		meter.lastRusage = meter.rusage()
+		runtime.ReadMemStats(&meter.lastMemStats)
 
 		tickC := time.Tick(1 * time.Second)
 		for {
 			<-tickC
-			meter.update()
+			meter.sampleGolang()
+			meter.sampleRusage()
+			meter.sampleStatm()
 		}
 	}()
 }
@@ -73,13 +89,33 @@ func (meter *process) rusage() (result syscall.Rusage) {
 	return
 }
 
-func (meter *process) update() {
-	rusage := meter.rusage()
-
+func (meter *process) sampleGolang() {
 	meter.Golang.Goroutines.Change(float64(runtime.NumGoroutine()))
+	meter.Golang.Threads.Change(float64(runtime.GOMAXPROCS(0)))
 
-	threads := runtime.GOMAXPROCS(0)
-	meter.Golang.Threads.Change(float64(threads))
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+
+	gcRuns := uint64(mem.NumGC - meter.lastMemStats.NumGC)
+	meter.Golang.GcRuns.Count(gcRuns)
+
+	gcPause := uint64(mem.PauseTotalNs - meter.lastMemStats.PauseTotalNs)
+	meter.Golang.GcPauseTime.Change(float64(gcPause/gcRuns) / float64(time.Second))
+
+	meter.Golang.AllocationRate.Change(float64(mem.TotalAlloc - meter.lastMemStats.TotalAlloc))
+
+	meter.Golang.HeapAlloc.Change(float64(mem.HeapAlloc))
+	meter.Golang.HeapSys.Change(float64(mem.HeapSys))
+	meter.Golang.HeapIdle.Change(float64(mem.HeapIdle))
+	meter.Golang.HeapInuse.Change(float64(mem.HeapInuse))
+	meter.Golang.HeapReleased.Change(float64(mem.HeapReleased))
+	meter.Golang.HeapObjects.Change(float64(mem.HeapObjects))
+
+	meter.lastMemStats = mem
+}
+
+func (meter *process) sampleRusage() {
+	rusage := meter.rusage()
 
 	utime := time.Duration(rusage.Utime.Nano() - meter.lastRusage.Utime.Nano())
 	meter.Processor.UserTime.ChangeDuration(utime)
@@ -87,7 +123,10 @@ func (meter *process) update() {
 	stime := time.Duration(rusage.Stime.Nano() - meter.lastRusage.Stime.Nano())
 	meter.Processor.SystemTime.ChangeDuration(stime)
 
-	meter.Load.Change(float64(utime + stime) / float64(time.Duration(threads) * time.Second))
+	// Overestimates because the goruntime creates two background threads which
+	// are not accounted by GOMAXPROCS. Better then nothing though.
+	threads := runtime.GOMAXPROCS(0)
+	meter.Load.Change(float64(utime+stime) / float64(time.Duration(threads)*time.Second))
 
 	meter.Processor.ContextSwitchesI.Change(float64(rusage.Nvcsw - meter.lastRusage.Nvcsw))
 	meter.Processor.ContextSwitchesV.Change(float64(rusage.Nivcsw - meter.lastRusage.Nivcsw))
@@ -100,11 +139,9 @@ func (meter *process) update() {
 	meter.Block.OutOps.Change(float64(rusage.Oublock - meter.lastRusage.Oublock))
 
 	meter.lastRusage = rusage
-	
-	meter.statm()
 }
 
-func (meter *process) statm() {
+func (meter *process) sampleStatm() {
 	body, err := ioutil.ReadFile("/proc/self/statm")
 	if err != nil {
 		klog.KFatalf("meter.process.statm.error", err.Error())
@@ -115,7 +152,7 @@ func (meter *process) statm() {
 		klog.KFatalf("meter.process.statm.parse.error", err.Error())
 	}
 
-	meter.Memory.Resident.Change(float64(rss))
-	meter.Memory.Virtual.Change(float64(virt))
-	meter.Memory.Shared.Change(float64(shared))
+	meter.Memory.Resident.Change(float64(rss * 1000))
+	meter.Memory.Virtual.Change(float64(virt * 1000))
+	meter.Memory.Shared.Change(float64(shared * 1000))
 }
