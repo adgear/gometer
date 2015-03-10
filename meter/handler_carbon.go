@@ -37,6 +37,8 @@ type CarbonHandler struct {
 	valuesC chan map[string]float64
 }
 
+// NewCarbonHandler instantiates a new CarbonHandler which will log to the given
+// URL.
 func NewCarbonHandler(URL string) *CarbonHandler {
 	return &CarbonHandler{URLs: []string{URL}}
 }

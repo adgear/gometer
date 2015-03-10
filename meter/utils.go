@@ -19,6 +19,11 @@ var (
 	stateType = reflect.TypeOf((*State)(nil))
 )
 
+// Load crawls the given object to register and instantiate any pointer to
+// meters that it finds. The meter key will be derived from the name of the
+// field that contains the meter and will be prefixed by the given prefix
+// string. If a structure is encoutered then it will be recursively crawled with
+// the name of the field appended to the given prefix.
 func Load(obj interface{}, prefix string) {
 
 	forEachMeter(reflect.ValueOf(obj), prefix, func(field reflect.Value, name string) {
@@ -45,6 +50,8 @@ func Load(obj interface{}, prefix string) {
 	})
 }
 
+// Unload crawls the given object and deregisters any pointer to meters that it
+// finds. See Load for more details about the crawling and naming behaviour.
 func Unload(obj interface{}, prefix string) {
 	forEachMeter(reflect.ValueOf(obj), prefix, func(field reflect.Value, name string) {
 		switch field.Type() {

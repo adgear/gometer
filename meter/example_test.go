@@ -7,66 +7,104 @@ import (
 
 	"fmt"
 	"sort"
+	"time"
 )
+
+// Meters will usually be associated with a service or a component
+type MyComponent struct {
+
+	// Meters are crawled via the meter.Load function where the name of the
+	// fields will be used as the name of the key for the meter.
+	metrics struct {
+		Gauge     *meter.Gauge
+		State     *meter.State
+		Counter   *meter.Counter
+		Histogram *meter.Histogram
+
+		// Nested structs are also supported and will lead to nested meters.
+		Multi struct {
+			Counter   *meter.MultiCounter
+			Histogram *meter.MultiHistogram
+			Gauge     *meter.MultiGauge
+		}
+	}
+}
+
+func (component *MyComponent) Init() {
+
+	// Initializing and registering the various meters is accomplished via the
+	// meter.Load function which will crawl the given object to fill and register
+	// the various meters.
+	meter.Load(&component.metrics, "myComponent")
+}
+
+func (component *MyComponent) Exec() {
+	// The Counter is used to count the number of events that occured within a
+	// second. Pretty straightforward.
+	component.metrics.Counter.Hit()
+	component.metrics.Counter.Count(10)
+
+	// A MultiCounter can be used to seperate your counts into buckets
+	// determined at runtime. Here we're indicating that we've seen one success
+	// and one error.
+	component.metrics.Multi.Counter.Hit("success")
+	component.metrics.Multi.Counter.Hit("error")
+
+	// A Gauge meter will output a given value until the value is
+	// changed. Useful to record events that only happen occasionally and are
+	// therefor not a good fit for histograms.
+	component.metrics.Gauge.Change(5)
+
+	// A State is similar to a gauge except that it will output the value 1 for
+	// a given value.
+	component.metrics.State.Change("happy")
+
+	// Histograms are used to output the distribution of events that occured
+	// within a second.
+	for i := 0; i < 100; i++ {
+		component.metrics.Histogram.Record(float64(i))
+	}
+}
 
 func ExampleMeter() {
 
-	// First we need to define our meters where all the recorded stats will be
-	// stored. Meters comes in 3 flavours (Counter, Histogram and Gauge)
-	// along with their multi variant (MultiCounter, MultiHistogram and
-	// MultiGauge).
-	var counter meter.Counter
-	var dist meter.Histogram
-	var gauge meter.Gauge
-	var multi meter.MultiCounter
+	// It's also to monitor various process metrics via the ProcessStats
+	// function (disabled to keep the example's output simple).
+	// meter.ProcessStats("")
 
-	// Next we register our meters with the global meter poller which will
-	// periodically read the values of the counters. Note that meters can also
-	// be unregistered via the Remove function.
-	meter.Add("meters.hits", &counter)
-	meter.Add("meters.latency", &dist)
-	meter.Add("meters.gauge", &gauge)
-	meter.Add("meters.result", &multi)
-
-	// We then need something that will listen to the values aggregated by the
-	// poller. These handlers must first be registered to a poller via the
-	// Handle function.
-	//
-	//Meter comes with several of these (eg. CarbonHandler, HTTPHandler, etc.)
-	//but for this example we'll create a simple handler that logs to a channel.
+	// Before we start polling we need to decide where our metrics will go. We
+	// can either use one of the builtin handlers (eg. CarbonHandler,
+	// RESTHandler, etc.)  or, for the sake of the example, we can create our
+	// own which will log to a channel.
 	resultC := make(chan map[string]float64)
 	handler := func(values map[string]float64) { resultC <- values }
 	meter.Handle(meter.HandlerFunc(handler))
 
-	// Next up we'll record some values with our meters.
+	// Meter polling must be initiated via the Poll function.
+	meter.Poll("myProcess", 1*time.Second)
 
-	counter.Hit()
-	counter.Count(10)
-
-	for i := 0; i < 100; i++ {
-		dist.Record(float64(i))
-	}
-
-	gauge.Change(5)
-
-	multi.Hit("err")
-	multi.Count("ok", 10)
+	// Finally, let's instantiate our component and start logging some metrics.
+	var component MyComponent
+	component.Init()
+	component.Exec()
 
 	// Finally, we'll finish off the test by reading the value and printing them
 	// out.
 	SortAndPrint(<-resultC)
 
 	// Output:
-	// meters.gauge: 5.000000
-	// meters.hits: 11.000000
-	// meters.latency.count: 100.000000
-	// meters.latency.max: 99.000000
-	// meters.latency.min: 0.000000
-	// meters.latency.p50: 50.000000
-	// meters.latency.p90: 90.000000
-	// meters.latency.p99: 99.000000
-	// meters.result.err: 1.000000
-	// meters.result.ok: 10.000000
+	// myProcess.myComponent.Counter: 11.000000
+	// myProcess.myComponent.Gauge: 5.000000
+	// myProcess.myComponent.Histogram.avg: 49.500000
+	// myProcess.myComponent.Histogram.count: 100.000000
+	// myProcess.myComponent.Histogram.max: 99.000000
+	// myProcess.myComponent.Histogram.min: 0.000000
+	// myProcess.myComponent.Histogram.p50: 50.000000
+	// myProcess.myComponent.Histogram.p90: 90.000000
+	// myProcess.myComponent.Histogram.p99: 99.000000
+	// myProcess.myComponent.Multi.Counter.error: 1.000000
+	// myProcess.myComponent.Multi.Counter.success: 1.000000
+	// myProcess.myComponent.State.happy: 1.000000
 }
 
 // SortAndPrint prints the map in a deterministic manner such that we can

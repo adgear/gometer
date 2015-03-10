@@ -94,6 +94,7 @@ type histogram struct {
 	items    []float64
 	count    int
 	min, max float64
+	sum      float64
 
 	rand *rand.Rand
 }
@@ -109,6 +110,7 @@ func newHistogram(size int, seed int64) *histogram {
 
 func (dist *histogram) Record(value float64) {
 	dist.count++
+	dist.sum += value
 
 	if dist.count <= len(dist.items) {
 		dist.items[dist.count-1] = value
@@ -158,12 +160,15 @@ func (dist *histogram) Read() map[string]float64 {
 		"count": float64(dist.count),
 		"min":   dist.min,
 		"max":   dist.max,
+		"avg":   dist.sum / float64(dist.count),
 		"p50":   percentile(50),
 		"p90":   percentile(90),
 		"p99":   percentile(99),
 	}
 }
 
+// GetHistogram returns the histogram registered with the given key or creates a
+// new one and registers it.
 func GetHistogram(prefix string) *Histogram {
 	return GetOrAdd(prefix, new(Histogram)).(*Histogram)
 }

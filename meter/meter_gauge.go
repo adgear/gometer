@@ -19,7 +19,7 @@ type Gauge struct {
 	mutex sync.Mutex
 }
 
-// Change changes the gauge to the givne value.
+// Change changes the recorded value.
 func (gauge *Gauge) Change(value float64) {
 	gauge.mutex.Lock()
 
@@ -28,15 +28,17 @@ func (gauge *Gauge) Change(value float64) {
 	gauge.mutex.Unlock()
 }
 
+// ChangeDuration similar to Change but with a time.Duration value.
 func (gauge *Gauge) ChangeDuration(duration time.Duration) {
 	gauge.Change(float64(duration) / float64(time.Second))
 }
 
+// ChangeSince records a duration elapsed since the given time.
 func (gauge *Gauge) ChangeSince(t0 time.Time) {
 	gauge.ChangeDuration(time.Since(t0))
 }
 
-// ReadMeter returns the currently set gauge if not equal to 0.
+// ReadMeter returns the currently set value if not equal to 0.
 func (gauge *Gauge) ReadMeter(_ time.Duration) map[string]float64 {
 	result := make(map[string]float64)
 
@@ -51,6 +53,8 @@ func (gauge *Gauge) ReadMeter(_ time.Duration) map[string]float64 {
 	return result
 }
 
+// GetGauge returns the gauge registered with the given key or creates a new one
+// and registers.
 func GetGauge(prefix string) *Gauge {
 	return GetOrAdd(prefix, new(Gauge)).(*Gauge)
 }

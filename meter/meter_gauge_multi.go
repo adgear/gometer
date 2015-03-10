@@ -22,10 +22,13 @@ func (multi *MultiGauge) Change(key string, value float64) {
 	multi.get(key).Change(value)
 }
 
+// ChangeDuration similar to Change but with a time.Duration value.
 func (multi *MultiGauge) ChangeDuration(key string, duration time.Duration) {
 	multi.get(key).ChangeDuration(duration)
 }
 
+// ChangeSince records a duration elapsed since the given time with the given
+// key.
 func (multi *MultiGauge) ChangeSince(key string, t0 time.Time) {
 	multi.get(key).ChangeSince(t0)
 }
@@ -90,6 +93,8 @@ func (multi *MultiGauge) store(gauges *map[string]*Gauge) {
 	atomic.StorePointer(&multi.gauges, unsafe.Pointer(gauges))
 }
 
+// GetMultiGauge returns the gauge registered with the given key or creates a
+// new one and registers it.
 func GetMultiGauge(prefix string) *MultiGauge {
 	return GetOrAdd(prefix, new(MultiGauge)).(*MultiGauge)
 }

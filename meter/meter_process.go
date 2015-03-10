@@ -62,6 +62,8 @@ type process struct {
 	lastMemStats runtime.MemStats
 }
 
+// ProcessStats registers various process metrics from the OS and the go runtime
+// under the given prefix.
 func ProcessStats(prefix string) {
 	meter := &process{}
 	Load(meter, Join(prefix, "process"))

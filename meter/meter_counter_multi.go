@@ -88,6 +88,8 @@ func (multi *MultiCounter) store(counters *map[string]*Counter) {
 	atomic.StorePointer(&multi.counters, unsafe.Pointer(counters))
 }
 
+// GetMultiCounter returns the counter registered with the given key or creates
+// a new one and registers it.
 func GetMultiCounter(prefix string) *MultiCounter {
 	return GetOrAdd(prefix, new(MultiCounter)).(*MultiCounter)
 }

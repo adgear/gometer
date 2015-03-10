@@ -34,6 +34,8 @@ func (counter *Counter) ReadMeter(delta time.Duration) map[string]float64 {
 	return result
 }
 
+// GetCounter returns the counter registered with the given key or creates a new
+// one and registers it.
 func GetCounter(prefix string) *Counter {
 	return GetOrAdd(prefix, new(Counter)).(*Counter)
 }

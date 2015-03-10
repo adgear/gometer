@@ -99,6 +99,8 @@ func (multi *MultiHistogram) store(dists *map[string]*Histogram) {
 	atomic.StorePointer(&multi.dists, unsafe.Pointer(dists))
 }
 
+// GetMultiHistogram returns the histogram registered with the given key or
+// creates a new one and registers it.
 func GetMultiHistogram(prefix string) *MultiHistogram {
 	return GetOrAdd(prefix, new(MultiHistogram)).(*MultiHistogram)
 }

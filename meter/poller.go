@@ -25,6 +25,8 @@ type Poller struct {
 	prefix string
 }
 
+// Get returns the meter associated with the given key or nil if no such meter
+// exists.
 func (poller *Poller) Get(key string) Meter {
 	poller.mutex.Lock()
 	defer poller.mutex.Unlock()
@@ -72,6 +74,9 @@ func (poller *Poller) Handle(handler Handler) {
 	poller.Handlers = append(poller.Handlers, handler)
 }
 
+// Poll starts a background goroutine which will periodically poll the
+// registered meters at the given rate and prepend all the polled keys with the
+// given prefix.
 func (poller *Poller) Poll(prefix string, rate time.Duration) {
 	poller.mutex.Lock()
 	defer poller.mutex.Unlock()
@@ -110,6 +115,8 @@ func (poller *Poller) poll() {
 // functions.
 var DefaultPoller Poller
 
+// Get returns the meter associated with the given key or nil if no such meter
+// exists.
 func Get(key string) Meter {
 	return DefaultPoller.Get(key)
 }
@@ -120,6 +127,8 @@ func Add(key string, meter Meter) bool {
 	return DefaultPoller.Add(key, meter)
 }
 
+// GetOrAdd registers the given meter with the given key if it's not already
+// registered or returns the meter associated with the given key.
 func GetOrAdd(key string, meter Meter) Meter {
 	for {
 		if old := Get(key); old != nil {
@@ -144,6 +153,9 @@ func Handle(handler Handler) {
 	DefaultPoller.Handle(handler)
 }
 
+// Poll starts a background goroutine which will periodically poll the
+// registered meters at the given rate and prepend all the polled keys with the
+// given prefix.
 func Poll(prefix string, rate time.Duration) {
 	DefaultPoller.Poll(prefix, rate)
 }
