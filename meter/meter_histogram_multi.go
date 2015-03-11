@@ -36,6 +36,12 @@ func (multi *MultiHistogram) RecordDuration(key string, value time.Duration) {
 	multi.get(key).RecordDuration(value)
 }
 
+// RecordSince records a duration elapsed since the given time for the given
+// key.
+func (multi *MultiHistogram) RecordSince(key string, t0 time.Time) {
+	multi.get(key).RecordSince(t0)
+}
+
 // ReadMeter calls ReadMeter on all the underlying histograms where all the
 // keys are prefixed by the key name used in the calls to Record.
 func (multi *MultiHistogram) ReadMeter(delta time.Duration) map[string]float64 {
