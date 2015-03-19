@@ -43,6 +43,7 @@ func (handler *RESTHandler) RESTRoutes() rest.Routes {
 		rest.NewRoute(prefix, "GET", handler.Get),
 		rest.NewRoute(prefix+"/prefix/:substr", "GET", handler.GetPrefix),
 		rest.NewRoute(prefix+"/substr/:substr", "GET", handler.GetSubstr),
+		rest.NewRoute(prefix+"/pattern/:pattern", "GET", handler.GetPattern),
 	}
 }
 
@@ -77,6 +78,15 @@ func (handler *RESTHandler) GetPrefix(prefix string) map[string]float64 {
 func (handler *RESTHandler) GetSubstr(substr string) map[string]float64 {
 	return handler.get(func(key string) bool {
 		return strings.Index(key, substr) >= 0
+	})
+}
+
+// GetPattern returns the set of metrics filtered to contain the given pattern.
+func (handler *RESTHandler) GetPattern(pattern string) map[string]float64 {
+	p := NewPattern(pattern)
+	return handler.get(func(key string) bool {
+		_, ok := p.Match(key)
+		return ok
 	})
 }
 
