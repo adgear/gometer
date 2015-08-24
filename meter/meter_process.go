@@ -94,29 +94,6 @@ func (meter *process) rusage() (result syscall.Rusage) {
 func (meter *process) sampleGolang() {
 	meter.Golang.Goroutines.Change(float64(runtime.NumGoroutine()))
 	meter.Golang.Threads.Change(float64(runtime.GOMAXPROCS(0)))
-
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
-
-	gcRuns := uint64(mem.NumGC - meter.lastMemStats.NumGC)
-	meter.Golang.GcRuns.Count(gcRuns)
-
-	gcPause := uint64(mem.PauseTotalNs - meter.lastMemStats.PauseTotalNs)
-	if gcRuns > 0 {
-		gcPause /= gcRuns
-	}
-	meter.Golang.GcPauseTime.Change(float64(gcPause) / float64(time.Second))
-
-	meter.Golang.AllocationRate.Change(float64(mem.TotalAlloc - meter.lastMemStats.TotalAlloc))
-
-	meter.Golang.HeapAlloc.Change(float64(mem.HeapAlloc))
-	meter.Golang.HeapSys.Change(float64(mem.HeapSys))
-	meter.Golang.HeapIdle.Change(float64(mem.HeapIdle))
-	meter.Golang.HeapInuse.Change(float64(mem.HeapInuse))
-	meter.Golang.HeapReleased.Change(float64(mem.HeapReleased))
-	meter.Golang.HeapObjects.Change(float64(mem.HeapObjects))
-
-	meter.lastMemStats = mem
 }
 
 func (meter *process) sampleRusage() {
